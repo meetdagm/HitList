@@ -7,20 +7,24 @@
 //
 
 import UIKit
+import CoreData
 
 class ViewController: UIViewController {
 
     let mainView = MainView()
-    var names = [String]()
+    var people = [Person]()
     let cellID = "cellID"
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setupTableView()
+        loadItems()
     }
     
     override func loadView() {
         self.view = mainView
+        
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -48,8 +52,9 @@ class ViewController: UIViewController {
         let alertController = UIAlertController(title: "Add a Friend", message: "What is your Friend's name", preferredStyle: .alert)
         let saveButton = UIAlertAction(title: "Save", style: .default) { (action) in
             guard let newName = alertController.textFields?.first?.text else {return}
-            self.names.append(newName)
-            self.mainView.viewTableView.reloadData()
+            let person = Person(context: self.context)
+            person.name = newName
+            self.save(person)
         }
         alertController.addTextField(configurationHandler: nil)
         alertController.addAction(saveButton)
@@ -66,23 +71,41 @@ extension ViewController: UITableViewDelegate, UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return names.count
+        return people.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = mainView.viewTableView.dequeueReusableCell(withIdentifier: cellID, for: indexPath)
-        cell.textLabel?.text = names[indexPath.row]
+        cell.textLabel?.text = people[indexPath.row].name
         return cell
     }
     
 }
 
+//MARK: CORE Data Properties
 
-
-
-
-
-
+extension ViewController {
+    
+    func save(_ person: Person){
+        do{
+            try context.save()
+            people.append(person)
+            self.mainView.viewTableView.reloadData()
+        }catch{
+            print("Error Saving Elements")
+        }
+    }
+    
+    func loadItems() {
+        let request: NSFetchRequest<Person> = Person.fetchRequest()
+        do{
+            people = try context.fetch(request)
+            self.mainView.viewTableView.reloadData()
+        }catch{
+            print("Error Fetching People")
+        }
+    }
+}
 
 
 
